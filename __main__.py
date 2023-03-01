@@ -10,6 +10,12 @@ import json
 from random import choice
 from hangul import *
 
+try:
+    from secret import set_secret
+    set_secret()
+except ModuleNotFoundError:
+    pass
+
 
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='?', intents=intents)
@@ -24,6 +30,13 @@ def get_custom_emoji_embed(emoji_name: str):
     embed = discord.Embed()
     embed.set_image(url=emoji.url)
     embed.set_footer(text=f':{emoji.name}:')
+    return embed
+
+
+def get_custom_sticker_embed(sticker: str):
+    embed = discord.Embed()
+    embed.set_image(url=sticker.url)
+    embed.set_footer(text=f'{sticker.name}')
     return embed
 
 
@@ -44,7 +57,7 @@ def kenken_called(message: str):
     return count
 
 
-class EmojiView(View):
+class EmbedPagerView(View):
     def __init__(self, embeds):
         super().__init__()
         self.embeds = embeds
@@ -101,15 +114,20 @@ async def on_name_called(message):
     if min_dist >= 30:
         bot.reacting = None
         return
-    if any(greet in message.content for greet in bot.kenwords['greet']):
-        await message.channel.send(choice(bot.kenwords['greet_answer']), 
+    if any(bad_word in ''.join(e for e in message.content if e.isalnum()) 
+           for bad_word in bot.kenwords['bad_word']):
+            await message.channel.send('ㅜㅠ',
+                                   reference=message if bot.late else None)
+    elif any(greet in message.content for greet in bot.kenwords['greet']):
+        await message.channel.send(choice(bot.kenwords['greet_answer']),
                                    reference=message if bot.late else None)
     elif called > 2:
         await message.channel.send(''.join([choice(bot.rwa) for _ in range(called)])[:1997]
-                                   + ''.join([choice(tuple('!?.')) for _ in range(3)]), 
+                                   + ''.join([choice(tuple('!?.'))
+                                             for _ in range(3)]),
                                    reference=message if bot.late else None)
     else:
-        await message.channel.send(choice(bot.kenwords['answer']), 
+        await message.channel.send(choice(bot.kenwords['answer']),
                                    reference=message if bot.late else None)
     bot.reacting = None
 
@@ -118,14 +136,35 @@ async def on_name_called(message):
 async def on_emoji_message(message):
     if message.author == bot.user:
         return
-
-    emojis = list(
-        set(re.compile(r'<:[a-zA-Z_0-9]+:\d+>').findall(message.content)))
+    emojis = list(re.compile(r'<:[a-zA-Z_0-9]+:\d+>').findall(message.content))
     if emojis:
         embeds = [get_custom_emoji_embed(emoji.split(':')[1])
                   for emoji in emojis]
-        view = EmojiView(embeds) if len(embeds) > 1 else None
-        await message.channel.send(embed=embeds[0], reference=message, view=view, delete_after=30)
+        view = EmbedPagerView(embeds) if len(embeds) > 1 else None
+        await message.channel.send(embed=embeds[0], view=view, delete_after=30,
+                                   reference=message if bot.late else None)
+
+
+@bot.listen('on_message')
+async def on_sticker_message(message):
+    if message.author == bot.user:
+        return
+    stickers = message.stickers
+    if stickers:
+        embeds = [get_custom_sticker_embed(sticker)
+                  for sticker in stickers]
+        view = EmbedPagerView(embeds) if len(embeds) > 1 else None
+        await message.channel.send(embed=embeds[0], view=view, delete_after=30,
+                                   reference=message if bot.late else None)
+
+
+@bot.listen('on_message')
+async def on_bad_word(message):
+    if message.author == bot.user:
+        return
+    if any(bad_word in ''.join(e for e in message.content if e.isalnum()) 
+           for bad_word in bot.kenwords['bad_word']):
+        await message.add_reaction('😱')
 
 
 bot_token = os.environ['BOT_TOKEN']
