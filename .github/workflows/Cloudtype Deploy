@@ -1,0 +1,38 @@
+name: Deploy to cloudtype
+on:
+  push:
+    branches:
+      - main
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Connect deploy key
+        uses: cloudtype-github-actions/connect@v1
+        with:
+          token: ${{ secrets.CLOUDTYPE_TOKEN }}
+          ghtoken: ${{ secrets.GHP_TOKEN }}
+      - name: Deploy
+        uses: cloudtype-github-actions/deploy@v1
+        with:
+          token: ${{ secrets.CLOUDTYPE_TOKEN }}
+          project: zer0ken_the_developer/kenken-3rd
+          stage: main
+          yaml: |
+            name: flask
+            app: python@3.9
+            options:
+              env:
+                - name: FLASK_ENV
+                  var: flask-env
+                - name: DB_PASSWORD
+                  secret: mariadb-root-password
+              ports: 5000
+              start: gunicorn -b 0.0.0.0:5000 app:app
+            context:
+              git:
+                url: git@github.com:${{ github.repository }}.git
+                ref: ${{ github.ref }}
+              preset: python-flask
