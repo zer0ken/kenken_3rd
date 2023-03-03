@@ -1,8 +1,6 @@
 name: Deploy to cloudtype
 on:
   push:
-    paths-ignore:
-      - 'kenwords.json'
     branches:
       - main
 jobs:
