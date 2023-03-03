@@ -76,11 +76,6 @@ class EmbedPagerView(View):
 @bot.event
 async def on_ready():
     print(f'We have logged in as {bot.user}')
-    fetch_kenwords()
-    for initial in ('ㅁ', 'ㅇ', 'ㄹ', 'ㄴ'):
-        for final in ('ㅁ', 'ㅇ', 'ㄴ', None):
-            for medial in map(str, CHAR_MEDIALS):
-                bot.rwa.append(join_jamos_char(initial, medial, final))
 
 
 @bot.listen('on_message')
@@ -165,6 +160,19 @@ async def on_bad_word(message):
     if any(bad_word in ''.join(e for e in message.content if e.isalnum()) 
            for bad_word in bot.kenwords['bad_word']):
         await message.add_reaction('😱')
+
+
+@bot.command(name='새로고침')
+async def refresh(ctx):
+    fetch_kenwords()
+    await ctx.message.add_reaction('🐸')
+
+
+fetch_kenwords()
+for initial in ('ㅁ', 'ㅇ', 'ㄹ', 'ㄴ'):
+    for final in ('ㅁ', 'ㅇ', 'ㄴ', None):
+        for medial in map(str, CHAR_MEDIALS):
+            bot.rwa.append(join_jamos_char(initial, medial, final))
 
 
 bot_token = os.environ['BOT_TOKEN']
