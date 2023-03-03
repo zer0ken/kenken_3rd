@@ -45,16 +45,17 @@ jobs:
         token: ${{ secrets.CLOUDTYPE_TOKEN }}
         project: zer0ken_the_developer/kenken-3rd
         yaml: |
-          name: flask
+          name: kenken-3rd
           app: python@3.10
           options:
+            ports: 8000
+            install: pip3 install -r requirements.txt
+            start: python ./
             env:
               - name: BOT_TOKEN
-                var: ${{ secrets.BOT_TOKEN }}
-            ports: 8000
-            start: python ./
+                value: ${{ secrets.BOT_TOKEN }}
+            strategy: rolling
           context:
             git:
-              url: git@github.com:${{ github.repository }}.git
-              ref: ${{ github.ref }}
-            preset: python-flask
+              url: https://github.com/zer0ken/kenken_3rd.git
+              branch: main
