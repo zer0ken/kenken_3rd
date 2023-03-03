@@ -36,3 +36,6 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Cloudtype Github Actions - Connect Repository
       uses: cloudtype-github-actions/connect@v1
+    - name: Cloudtype Github Actions - Deploy
+      uses: cloudtype-github-actions/deploy@v1
+
