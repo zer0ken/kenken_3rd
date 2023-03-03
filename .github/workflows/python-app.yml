@@ -44,3 +44,17 @@ jobs:
       with:
         token: ${{ secrets.CLOUDTYPE_TOKEN }}
         project: zer0ken_the_developer/kenken-3rd
+        yaml: |
+          name: flask
+          app: python@3.10
+          options:
+            env:
+              - name: BOT_TOKEN
+                var: ${{ secrets.BOT_TOKEN }}
+            ports: 8000
+            start: python ./
+          context:
+            git:
+              url: git@github.com:${{ github.repository }}.git
+              ref: ${{ github.ref }}
+            preset: python-flask
