@@ -177,6 +177,4 @@ for initial in ('ㅁ', 'ㅇ', 'ㄹ', 'ㄴ'):
 
 bot_token = os.environ['BOT_TOKEN']
 
-print('running...' + bot_token[:5])
-
 bot.run(bot_token)
