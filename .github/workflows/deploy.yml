@@ -30,7 +30,7 @@ jobs:
               env:
                 - name: BOT_TOKEN
                   value: ${{ secrets.BOT_TOKEN }}
-              strategy: rolling
+              strategy: recreate
             context:
               git:
                 url: git@github.com:${{ github.repository }}.git
