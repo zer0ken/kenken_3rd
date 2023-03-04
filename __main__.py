@@ -181,14 +181,13 @@ async def members(ctx):
         return
     members = sorted(ctx.guild.members, key=lambda m: m.joined_at)
     members = [
-        discord.utils.escape_markdown(
-            "{:02d}".format(i+1) + '. '
-            + member.display_name
-            + ('(' + member.name + ')' if member.nick else '')
-            + '\n  - '
-            + member.joined_at
-            .astimezone(KST).strftime('%Y-%m-%d %H:%M:%S')
-            + ' 가입')
+        "{:02d}".format(i+1) + '. '
+        + member.display_name
+        + ('(' + member.name + ')' if member.nick else '')
+        + '\n  - '
+        + member.joined_at
+        .astimezone(KST).strftime('%Y-%m-%d %H:%M:%S')
+        + ' 가입'
         for (i, member) in enumerate(members)]
     embeds = [
         get_member_list_embed(
