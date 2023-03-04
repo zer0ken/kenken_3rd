@@ -7,8 +7,14 @@ import re
 import os
 import json
 
+import math
+import datetime
 from random import choice
 from hangul import *
+
+from pytz import timezone
+
+KST = timezone('Asia/Seoul')
 
 try:
     from secret import set_secret
@@ -23,6 +29,7 @@ bot.kenwords = {}
 bot.rwa = []
 bot.reacting = None
 bot.late = False
+bot.member_list = None
 
 
 def get_custom_emoji_embed(emoji_name: str):
@@ -37,6 +44,12 @@ def get_custom_sticker_embed(sticker: str):
     embed = discord.Embed()
     embed.set_image(url=sticker.url)
     embed.set_footer(text=f'{sticker.name}')
+    return embed
+
+
+def get_member_list_embed(members: list, page: int, max_page: int):
+    embed = discord.Embed(description='```\n'+'\n\n'.join(members)+'\n```')
+    embed.set_footer(text=f'{page} / {max_page}')
     return embed
 
 
@@ -109,9 +122,9 @@ async def on_name_called(message):
     if min_dist >= 30:
         bot.reacting = None
         return
-    if any(bad_word in ''.join(e for e in message.content if e.isalnum()) 
+    if any(bad_word in ''.join(e for e in message.content if e.isalnum())
            for bad_word in bot.kenwords['bad_word']):
-            await message.channel.send('ㅜㅠ',
+        await message.channel.send('ㅜㅠ',
                                    reference=message if bot.late else None)
     elif any(greet in message.content for greet in bot.kenwords['greet']):
         await message.channel.send(choice(bot.kenwords['greet_answer']),
@@ -157,16 +170,36 @@ async def on_sticker_message(message):
 async def on_bad_word(message):
     if message.author == bot.user:
         return
-    if any(bad_word in ''.join(e for e in message.content if e.isalnum()) 
+    if any(bad_word in ''.join(e for e in message.content if e.isalnum())
            for bad_word in bot.kenwords['bad_word']):
         await message.add_reaction('😱')
 
 
-@bot.command(name='새로고침')
-async def refresh(ctx):
-    fetch_kenwords()
-    await ctx.message.add_reaction('🐸')
-
+@bot.command(name='멤버')
+async def members(ctx):
+    if ctx.guild is None:
+        return
+    members = sorted(ctx.guild.members, key=lambda m: m.joined_at)
+    members = [
+        discord.utils.escape_markdown(
+            "{:02d}".format(i+1) + '. '
+            + member.display_name
+            + ('(' + member.name + ')' if member.nick else '')
+            + '\n  - '
+            + member.joined_at
+            .astimezone(KST).strftime('%Y-%m-%d %H:%M:%S')
+            + ' 가입')
+        for (i, member) in enumerate(members)]
+    embeds = [
+        get_member_list_embed(
+            members[i:i+10], i // 10 + 1, math.ceil(len(members) / 10))
+        for i in range(0, len(members), 10)]
+    view = EmbedPagerView(embeds) if len(embeds) > 1 else None
+    member_list = await ctx.channel.send(embed=embeds[0], view=view, delete_after=60,
+                                         reference=ctx.message if bot.late else None)
+    if bot.member_list is not None:
+        await bot.member_list.delete()
+    bot.member_list = member_list
 
 fetch_kenwords()
 for initial in ('ㅁ', 'ㅇ', 'ㄹ', 'ㄴ'):
