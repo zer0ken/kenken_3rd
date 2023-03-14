@@ -249,17 +249,17 @@ async def on_name_called(message):
 #                                    reference=message if bot.late else None)
 
 
-@bot.listen('on_message')
-async def on_sticker_message(message):
-    if message.author == bot.user:
-        return
-    stickers = message.stickers
-    if stickers:
-        embeds = [get_custom_sticker_embed(sticker)
-                  for sticker in stickers]
-        view = EmbedPagerView(embeds) if len(embeds) > 1 else None
-        await message.channel.send(embed=embeds[0], view=view, delete_after=30,
-                                   reference=message if bot.late else None)
+# @bot.listen('on_message')
+# async def on_sticker_message(message):
+#     if message.author == bot.user:
+#         return
+#     stickers = message.stickers
+#     if stickers:
+#         embeds = [get_custom_sticker_embed(sticker)
+#                   for sticker in stickers]
+#         view = EmbedPagerView(embeds) if len(embeds) > 1 else None
+#         await message.channel.send(embed=embeds[0], view=view, delete_after=30,
+#                                    reference=message if bot.late else None)
 
 
 @bot.listen('on_message')
