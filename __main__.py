@@ -9,7 +9,7 @@ import json
 
 import math
 import datetime
-from random import choice
+from random import choice, random
 from hangul import *
 
 from pytz import timezone
@@ -30,6 +30,13 @@ bot.rwa = []
 bot.reacting = None
 bot.late = False
 bot.member_list = None
+bot.forges = {
+    # user_id: {
+    #    'inventory': list,
+    #    'inventory_message': discord.Message
+    #    'forge_message': discord.Message
+    # }
+}
 
 
 def get_custom_emoji_embed(emoji_name: str):
@@ -70,6 +77,69 @@ def kenken_called(message: str):
     return count
 
 
+async def fetch_inventory(user):
+    if dm_channel := user.dm_channel is None:
+        dm_channel = await user.create_dm()
+    inventory_message = None
+    for pin in await dm_channel.pins():
+        if pin.content.startswith('__인벤토리__') and pin.author is bot.user:
+            inventory_message = pin
+            break
+    if inventory_message is None:
+        inventory = get_inventory_embed(user)
+        inventory_message = await dm_channel.send('__인벤토리__', embed=inventory)
+        await inventory_message.pin()
+    return inventory_message
+
+
+def get_inventory_embed(user, inventory=None):
+    embed = discord.Embed()
+    embed.title = '🧰 인벤토리'
+    if inventory is None:
+        embed.description = '\n'.join('`{:02d}.` +{} {}'.format(i+1, 0, bot.kenwords['item_grade'][0]) for i in range(10))
+    else:
+        pass
+    embed.set_author(name=user.name, icon_url=user.avatar.url)
+    embed.color = discord.Color.red()
+    embed.set_footer(text='?강화 명령어로 아이템을ㄹ 강화해버ㅏ!!')
+    return embed
+
+
+def parse_inventory(inventory_embed):
+    inventory = [(i, int(line.split(' ')[1])) 
+             for i, line 
+             in enumerate(inventory_embed.description.split('\n'))]
+    return inventory
+
+
+def get_forge_chance(item_grade):
+    return 0.95 ** item_grade
+
+
+def get_forge_embed(user, inventory):
+    embed = discord.Embed()
+    embed.title = get_item_title(*inventory[0]) +' 🔨 강화'
+    embed.description = f'성공 확률 __{get_forge_chance(inventory[0][1])*100:.6f}%\n__'
+    embed.set_author(name=user.name, icon_url=user.avatar.url)
+    embed.set_footer(text='강화에 실패하면 1% 확률로 등급이 초기?하??된대!!!')
+    embed.color = discord.Color.red()
+    return embed
+
+
+def get_item_title(i, grade):
+    return '`{:02d}.` +{} {}'.format(i+1, grade, bot.kenwords['item_grade'][grade])
+
+
+async def ready_forge(user):
+    if user.id in bot.forges:
+        return
+    forge = {}
+    forge['forge_message'] = None
+    forge['inventory_message'] = await fetch_inventory(user)
+    forge['inventory']= parse_inventory(forge['inventory_message'].embeds[0])
+    bot.forges[user.id] = forge
+
+
 class EmbedPagerView(View):
     def __init__(self, embeds):
         super().__init__()
@@ -84,6 +154,31 @@ class EmbedPagerView(View):
     async def next_button_callback(self, interaction, button):
         self.embeds = self.embeds[1:] + [self.embeds[0]]
         await interaction.response.edit_message(embed=self.embeds[0], view=self)
+
+
+class ForgeView(View):
+    def __init__(self, user, inventory, inventory_message):
+        super().__init__()
+        self.user = user
+        self.inventory = inventory
+        self.inventory_message = inventory_message
+
+    async def interaction_check(self, interaction: discord.Interaction, /) -> bool:
+        return self.user == interaction.user
+
+    @discord.ui.button(label="강화하기", style=discord.ButtonStyle.danger, emoji='🔨')
+    async def forge_button_callback(self, interaction, button):
+        pass
+
+    @discord.ui.button(label="이전 아이템", style=discord.ButtonStyle.secondary, emoji='⏪')
+    async def prev_button_callback(self, interaction, button):
+        self.inventory = [self.inventory[-1]] + self.inventory[:-1]
+        await interaction.response.edit_message(embed=get_forge_embed(self.user, self.inventory), view=self)
+        
+    @discord.ui.button(label="다음 아이템", style=discord.ButtonStyle.primary, emoji='⏩')
+    async def next_button_callback(self, interaction, button):
+        self.inventory = self.inventory[1:] + [self.inventory[0]]
+        await interaction.response.edit_message(embed=get_forge_embed(self.user, self.inventory), view=self)
 
 
 @bot.event
@@ -140,17 +235,18 @@ async def on_name_called(message):
     bot.reacting = None
 
 
-@bot.listen('on_message')
-async def on_emoji_message(message):
-    if message.author == bot.user:
-        return
-    emojis = list(re.compile(r'<:[a-zA-Z_0-9]+:\d+>').findall(message.content))
-    if emojis:
-        embeds = [get_custom_emoji_embed(emoji.split(':')[1])
-                  for emoji in emojis]
-        view = EmbedPagerView(embeds) if len(embeds) > 1 else None
-        await message.channel.send(embed=embeds[0], view=view, delete_after=30,
-                                   reference=message if bot.late else None)
+# @bot.listen('on_message')
+# async def on_emoji_message(message: discord.Message):
+#     if message.author == bot.user:
+#         return
+#     emojis = list(re.compile(r'<:[a-zA-Z_0-9]+:\d+>').findall(message.content))
+#     if emojis:
+#         await message.add_reaction('❔')
+#         embeds = [get_custom_emoji_embed(emoji.split(':')[1])
+#                   for emoji in emojis]
+#         view = EmbedPagerView(embeds) if len(embeds) > 1 else None
+#         await message.channel.send(embed=embeds[0], view=view, delete_after=30,
+#                                    reference=message if bot.late else None)
 
 
 @bot.listen('on_message')
@@ -181,7 +277,7 @@ async def members(ctx):
         return
     members = sorted(ctx.guild.members, key=lambda m: m.joined_at)
     members = [
-        "{:02d}".format(i+1) + '. '
+        '{:02d}'.format(i+1) + '. '
         + member.display_name
         + ('(' + member.name + ')' if member.nick else '')
         + '\n  - '
@@ -199,6 +295,16 @@ async def members(ctx):
     if bot.member_list is not None:
         await bot.member_list.delete()
     bot.member_list = member_list
+
+
+@bot.command(name='강화')
+async def forge(ctx):
+    message = await ctx.send('기다려봐...')
+    await ready_forge(ctx.author)
+    embed = get_forge_embed(ctx.author, bot.forges[ctx.author.id]['inventory'])
+    view = ForgeView(ctx.author, bot.forges[ctx.author.id]['inventory'], bot.forges[ctx.author.id]['inventory_message'])
+    await message.edit(content='짜잔~', embed=embed, view=view)
+
 
 fetch_kenwords()
 for initial in ('ㅁ', 'ㅇ', 'ㄹ', 'ㄴ'):
