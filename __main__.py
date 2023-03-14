@@ -241,7 +241,6 @@ async def on_name_called(message):
 #         return
 #     emojis = list(re.compile(r'<:[a-zA-Z_0-9]+:\d+>').findall(message.content))
 #     if emojis:
-#         await message.add_reaction('❔')
 #         embeds = [get_custom_emoji_embed(emoji.split(':')[1])
 #                   for emoji in emojis]
 #         view = EmbedPagerView(embeds) if len(embeds) > 1 else None
@@ -290,7 +289,8 @@ async def members(ctx):
             members[i:i+10], i // 10 + 1, math.ceil(len(members) / 10))
         for i in range(0, len(members), 10)]
     view = EmbedPagerView(embeds) if len(embeds) > 1 else None
-    member_list = await ctx.channel.send(embed=embeds[0], view=view, delete_after=60,
+    member_list = await ctx.channel.send('멤버 목록이야!', 
+                                         embed=embeds[0], view=view, delete_after=60,
                                          reference=ctx.message if bot.late else None)
     if bot.member_list is not None:
         await bot.member_list.delete()
@@ -304,6 +304,21 @@ async def forge(ctx):
     embed = get_forge_embed(ctx.author, bot.forges[ctx.author.id]['inventory'])
     view = ForgeView(ctx.author, bot.forges[ctx.author.id]['inventory'], bot.forges[ctx.author.id]['inventory_message'])
     await message.edit(content='짜잔~', embed=embed, view=view)
+
+
+@bot.command(name='삭제')
+@discord.app_commands.checks.has_role(1073242537554346044)
+async def purge_words(ctx, count, word, *words):
+    words = [word] + list(words)
+    count = int(count)
+    messages = [m async for m in ctx.channel.history(limit=count)
+                if any(w in m.content for w in words)]
+    deleted = await ctx.channel.purge(limit=count, bulk=True,
+                                      check=lambda m: any(w in m.content for w in words),
+                                      reason=ctx.author.display_name + '님의 명령으로 삭제됨')
+    notice = '\n'.join(f'{m.author.display_name}: {m.content[:10]}...' for m in messages)
+    await ctx.send(f'총 `{len(deleted)}`개의 메시지를 삭제했어.!\n||{words}||\n```\n{notice}\n```', delete_after=30)
+    
 
 
 fetch_kenwords()
