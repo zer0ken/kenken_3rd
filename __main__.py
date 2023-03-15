@@ -308,13 +308,13 @@ async def forge(ctx):
 
 @bot.command(name='삭제')
 @discord.app_commands.checks.has_role(1073242537554346044)
-async def purge_words(ctx, count, word, *words):
-    words = [word] + list(words)
+async def purge_words(ctx, count, *words):
     count = int(count)
+    condition = lambda m: any(w in m.content for w in words) if words else True
     messages = [m async for m in ctx.channel.history(limit=count)
-                if any(w in m.content for w in words)]
+                if condition(m)]
     deleted = await ctx.channel.purge(limit=count, bulk=True,
-                                      check=lambda m: any(w in m.content for w in words),
+                                      check=condition,
                                       reason=ctx.author.display_name + '님의 명령으로 삭제됨')
     notice = '\n'.join(f'{m.author.display_name}: {m.content[:10]}...' for m in messages)
     await ctx.send(f'총 `{len(deleted)}`개의 메시지를 삭제했어.!\n||{words}||\n```\n{notice}\n```', delete_after=30)
