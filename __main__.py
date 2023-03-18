@@ -325,7 +325,6 @@ async def purge_words(ctx, count, *words):
     await ctx.send(f'총 `{len(deleted)}`개의 메시지를 삭제했어.!\n||{words}||\n```\n{notice}\n```', delete_after=30)
 
 
-@discord.app_commands.checks.has_role('1086480834187513976')
 @bot.listen('on_message')
 async def tts_message(message):
     if message.author == bot.user:
@@ -333,9 +332,11 @@ async def tts_message(message):
     emojis = list(re.compile(r'<:[a-zA-Z_0-9]+:\d+>').findall(message.content))
     if emojis:
         return
+    # need role 
     if message.channel.id == 1048100402756857886 \
             and message.author.voice is not None \
-            and message.author.voice.self_mute is True:
+            and message.author.voice.self_mute is True \
+            and not message.content.startswith('\\'):
         content = message.content
         prefix = '☏'
         if bot.last_tts is None:
