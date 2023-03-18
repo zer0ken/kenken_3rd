@@ -332,7 +332,13 @@ async def tts_message(message):
     if message.channel.id == 1048100402756857886 \
             and message.author.voice is not None \
             and message.author.voice.self_mute is True:
-        await message.channel.send('tts '+message.content, delete_after=0.1)
+        content = message.content
+        prefix = '☏'
+        channel = message.channel
+        last_message = [m async for m in channel.history(limit=2)][1]
+        if last_message.author != message.author:
+            content = '얘들아 나 ' + message.author.display_name+  '인데, ' + content
+        await message.channel.send(prefix + content, delete_after=0.1)
 
 
 fetch_kenwords()
