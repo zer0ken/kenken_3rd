@@ -37,6 +37,7 @@ bot.forges = {
     #    'forge_message': discord.Message
     # }
 }
+bot.last_tts = None
 
 
 def get_custom_emoji_embed(emoji_name: str):
@@ -335,9 +336,11 @@ async def tts_message(message):
         content = message.content
         prefix = '☏'
         channel = message.channel
-        last_message = [m async for m in channel.history(limit=2)][1]
-        if last_message.author != message.author:
+        if bot.last_tts is None:
+            bot.last_tts = 355354931026198528
+        if bot.last_tts != message.author.id:
             content = '얘들아 나 ' + message.author.display_name+  '인데, ' + content
+            bot.last_tts = message.author.id
         await message.channel.send(prefix + content, delete_after=0.1)
 
 
