@@ -335,7 +335,6 @@ async def tts_message(message):
             and message.author.voice.self_mute is True:
         content = message.content
         prefix = '☏'
-        channel = message.channel
         if bot.last_tts is None:
             bot.last_tts = 355354931026198528
         if bot.last_tts != message.author.id:
