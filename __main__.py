@@ -330,6 +330,9 @@ async def purge_words(ctx, count, *words):
 async def tts_message(message):
     if message.author == bot.user:
         return
+    emojis = list(re.compile(r'<:[a-zA-Z_0-9]+:\d+>').findall(message.content))
+    if emojis:
+        return
     if message.channel.id == 1048100402756857886 \
             and message.author.voice is not None \
             and message.author.voice.self_mute is True:
