@@ -96,7 +96,8 @@ def get_inventory_embed(user, inventory=None):
     embed = discord.Embed()
     embed.title = '🧰 인벤토리'
     if inventory is None:
-        embed.description = '\n'.join('`{:02d}.` +{} {}'.format(i+1, 0, bot.kenwords['item_grade'][0]) for i in range(10))
+        embed.description = '\n'.join(
+            '`{:02d}.` +{} {}'.format(i+1, 0, bot.kenwords['item_grade'][0]) for i in range(10))
     else:
         pass
     embed.set_author(name=user.name, icon_url=user.avatar.url)
@@ -106,9 +107,9 @@ def get_inventory_embed(user, inventory=None):
 
 
 def parse_inventory(inventory_embed):
-    inventory = [(i, int(line.split(' ')[1])) 
-             for i, line 
-             in enumerate(inventory_embed.description.split('\n'))]
+    inventory = [(i, int(line.split(' ')[1]))
+                 for i, line
+                 in enumerate(inventory_embed.description.split('\n'))]
     return inventory
 
 
@@ -118,7 +119,7 @@ def get_forge_chance(item_grade):
 
 def get_forge_embed(user, inventory):
     embed = discord.Embed()
-    embed.title = get_item_title(*inventory[0]) +' 🔨 강화'
+    embed.title = get_item_title(*inventory[0]) + ' 🔨 강화'
     embed.description = f'성공 확률 __{get_forge_chance(inventory[0][1])*100:.6f}%\n__'
     embed.set_author(name=user.name, icon_url=user.avatar.url)
     embed.set_footer(text='강화에 실패하면 1% 확률로 등급이 초기?하??된대!!!')
@@ -136,7 +137,7 @@ async def ready_forge(user):
     forge = {}
     forge['forge_message'] = None
     forge['inventory_message'] = await fetch_inventory(user)
-    forge['inventory']= parse_inventory(forge['inventory_message'].embeds[0])
+    forge['inventory'] = parse_inventory(forge['inventory_message'].embeds[0])
     bot.forges[user.id] = forge
 
 
@@ -174,7 +175,7 @@ class ForgeView(View):
     async def prev_button_callback(self, interaction, button):
         self.inventory = [self.inventory[-1]] + self.inventory[:-1]
         await interaction.response.edit_message(embed=get_forge_embed(self.user, self.inventory), view=self)
-        
+
     @discord.ui.button(label="다음 아이템", style=discord.ButtonStyle.primary, emoji='⏩')
     async def next_button_callback(self, interaction, button):
         self.inventory = self.inventory[1:] + [self.inventory[0]]
@@ -289,7 +290,7 @@ async def members(ctx):
             members[i:i+10], i // 10 + 1, math.ceil(len(members) / 10))
         for i in range(0, len(members), 10)]
     view = EmbedPagerView(embeds) if len(embeds) > 1 else None
-    member_list = await ctx.channel.send('멤버 목록이야!', 
+    member_list = await ctx.channel.send('멤버 목록이야!',
                                          embed=embeds[0], view=view, delete_after=60,
                                          reference=ctx.message if bot.late else None)
     if bot.member_list is not None:
@@ -302,7 +303,8 @@ async def forge(ctx):
     message = await ctx.send('기다려봐...')
     await ready_forge(ctx.author)
     embed = get_forge_embed(ctx.author, bot.forges[ctx.author.id]['inventory'])
-    view = ForgeView(ctx.author, bot.forges[ctx.author.id]['inventory'], bot.forges[ctx.author.id]['inventory_message'])
+    view = ForgeView(ctx.author, bot.forges[ctx.author.id]
+                     ['inventory'], bot.forges[ctx.author.id]['inventory_message'])
     await message.edit(content='짜잔~', embed=embed, view=view)
 
 
@@ -310,15 +312,27 @@ async def forge(ctx):
 @discord.app_commands.checks.has_role(1073242537554346044)
 async def purge_words(ctx, count, *words):
     count = int(count)
-    condition = lambda m: any(w in m.content for w in words) if words else True
+    def condition(m): return any(
+        w in m.content for w in words) if words else True
     messages = [m async for m in ctx.channel.history(limit=count)
                 if condition(m)]
     deleted = await ctx.channel.purge(limit=count, bulk=True,
                                       check=condition,
                                       reason=ctx.author.display_name + '님의 명령으로 삭제됨')
-    notice = '\n'.join(f'{m.author.display_name}: {m.content[:10]}...' for m in messages)
+    notice = '\n'.join(
+        f'{m.author.display_name}: {m.content[:10]}...' for m in messages)
     await ctx.send(f'총 `{len(deleted)}`개의 메시지를 삭제했어.!\n||{words}||\n```\n{notice}\n```', delete_after=30)
-    
+
+
+@discord.app_commands.checks.has_role('1086480834187513976')
+@bot.listen('on_message')
+async def tts_message(message):
+    if message.author == bot.user:
+        return
+    if message.channel.id == 1048100402756857886 \
+            and message.author.voice is not None \
+            and message.author.voice.self_mute is True:
+        await message.channel.send('tts '+message.content, delete_after=0.1)
 
 
 fetch_kenwords()
