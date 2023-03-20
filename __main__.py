@@ -332,13 +332,11 @@ async def tts_message(message):
     emojis = list(re.compile(r'<:[a-zA-Z_0-9]+:\d+>').findall(message.content))
     if emojis:
         return
-    tts_bot = await message.guild.fetch_member(513423712582762502)
-    if tts_bot is None or tts_bot.voice is None or tts_bot.voie.mute:
-        return
     if message.channel.id == 1048100402756857886 \
             and message.author.voice is not None \
             and message.author.voice.self_mute is True \
-            and not message.content.startswith('\\'):
+            and not message.content.startswith('\\')
+            and 513423712582762502 in (m.id for m in message.author.voice.channel.members):
         content = message.content
         prefix = '☏'
         if bot.last_tts is None:
