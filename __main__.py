@@ -342,7 +342,7 @@ async def tts_message(message):
         if bot.last_tts is None:
             bot.last_tts = 355354931026198528
         if bot.last_tts != message.author.id:
-            content = '얘들아 나 ' + message.author.display_name+  '인데, ' + content
+            content = content + '\n아, 나는 ' + message.author.display_name+  '임'
             bot.last_tts = message.author.id
         await message.channel.send(prefix + content, delete_after=0.1)
 
