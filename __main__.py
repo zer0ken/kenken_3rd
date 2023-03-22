@@ -335,7 +335,7 @@ async def tts_message(message):
     if message.channel.id == 1048100402756857886 \
             and message.author.voice is not None \
             and message.author.voice.self_mute is True \
-            and not message.content.startswith('\\') \
+            and message.content.startswith(' ') \
             and 513423712582762502 in (m.id for m in message.author.voice.channel.members):
         content = message.content
         prefix = '☏'
