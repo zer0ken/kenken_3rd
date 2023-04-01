@@ -336,7 +336,7 @@ async def tts_message(message):
             and message.channel.id == 1048100402756857886 \
             and message.author.voice is not None \
             and message.author.voice.self_mute is True \
-            and message.content.startswith('.') \
+            and message.content.startswith(('.', ';')) \
             and 513423712582762502 in (m.id for m in message.author.voice.channel.members):
         content = message.content[1:]
         prefix = '☏'
@@ -346,7 +346,8 @@ async def tts_message(message):
             content = content
             bot.last_tts = message.author.id
         await message.channel.send(prefix + content, delete_after=0.1)
-        await message.delete(delay=10)
+        if message.content[0] == ';':
+            await message.delete(delay=10)
 
 
 fetch_kenwords()
