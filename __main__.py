@@ -346,6 +346,7 @@ async def tts_message(message):
             content = content
             bot.last_tts = message.author.id
         await message.channel.send(prefix + content, delete_after=0.1)
+        await message.delete(delay=10)
 
 
 fetch_kenwords()
