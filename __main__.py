@@ -332,12 +332,14 @@ async def tts_message(message):
     emojis = list(re.compile(r'<:[a-zA-Z_0-9]+:\d+>').findall(message.content))
     if emojis:
         return
+    print(f'tts_message: checking... {message.content}')
     if len(message.content[1:]) >= 1 \
             and message.channel.id == 1048100402756857886 \
             and message.author.voice is not None \
             and message.author.voice.self_mute is True \
             and message.content.startswith(('.', ';')) \
             and 513423712582762502 in (m.id for m in message.author.voice.channel.members):
+        print(f'tts_message: check success; {message.content}')
         content = message.content[1:]
         prefix = '☏'
         if bot.last_tts is None:
